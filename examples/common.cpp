@@ -910,3 +910,36 @@ bool speak_with_file(const std::string & command, const std::string & text, cons
     }
     return true;
 }
+
+std::string estimate_diarization_speaker(int whisper_sample_rate,std::vector<std::vector<float>> pcmf32s, int64_t t0, int64_t t1, bool id_only) {
+    std::string speaker = "";
+    const int64_t n_samples = pcmf32s[0].size();
+
+    const int64_t is0 = timestamp_to_sample(t0, n_samples, whisper_sample_rate);
+    const int64_t is1 = timestamp_to_sample(t1, n_samples, whisper_sample_rate);
+
+    double energy0 = 0.0f;
+    double energy1 = 0.0f;
+
+    for (int64_t j = is0; j < is1; j++) {
+        energy0 += fabs(pcmf32s[0][j]);
+        energy1 += fabs(pcmf32s[1][j]);
+    }
+
+    if (energy0 > 1.1*energy1) {
+        speaker = "0";
+    } else if (energy1 > 1.1*energy0) {
+        speaker = "1";
+    } else {
+        speaker = "?";
+    }
+
+    //printf("is0 = %lld, is1 = %lld, energy0 = %f, energy1 = %f, speaker = %s\n", is0, is1, energy0, energy1, speaker.c_str());
+
+    if (!id_only) {
+        speaker.insert(0, "(speaker ");
+        speaker.append(")");
+    }
+
+    return speaker;
+}

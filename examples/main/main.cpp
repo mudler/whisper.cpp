@@ -248,38 +248,7 @@ struct whisper_print_user_data {
     int progress_prev;
 };
 
-std::string estimate_diarization_speaker(std::vector<std::vector<float>> pcmf32s, int64_t t0, int64_t t1, bool id_only = false) {
-    std::string speaker = "";
-    const int64_t n_samples = pcmf32s[0].size();
 
-    const int64_t is0 = timestamp_to_sample(t0, n_samples, WHISPER_SAMPLE_RATE);
-    const int64_t is1 = timestamp_to_sample(t1, n_samples, WHISPER_SAMPLE_RATE);
-
-    double energy0 = 0.0f;
-    double energy1 = 0.0f;
-
-    for (int64_t j = is0; j < is1; j++) {
-        energy0 += fabs(pcmf32s[0][j]);
-        energy1 += fabs(pcmf32s[1][j]);
-    }
-
-    if (energy0 > 1.1*energy1) {
-        speaker = "0";
-    } else if (energy1 > 1.1*energy0) {
-        speaker = "1";
-    } else {
-        speaker = "?";
-    }
-
-    //printf("is0 = %lld, is1 = %lld, energy0 = %f, energy1 = %f, speaker = %s\n", is0, is1, energy0, energy1, speaker.c_str());
-
-    if (!id_only) {
-        speaker.insert(0, "(speaker ");
-        speaker.append(")");
-    }
-
-    return speaker;
-}
 void whisper_print_progress_callback(struct whisper_context * /*ctx*/, struct whisper_state * /*state*/, int progress, void * user_data) {
     int progress_step = ((whisper_print_user_data *) user_data)->params->progress_step;
     int * progress_prev  = &(((whisper_print_user_data *) user_data)->progress_prev);
@@ -318,7 +287,7 @@ void whisper_print_segment_callback(struct whisper_context * ctx, struct whisper
         }
 
         if (params.diarize && pcmf32s.size() == 2) {
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1);
         }
 
         if (params.print_colors) {
@@ -376,7 +345,7 @@ bool output_txt(struct whisper_context * ctx, const char * fname, const whisper_
         {
             const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
             const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1);
         }
 
         fout << speaker << text << "\n";
@@ -405,7 +374,7 @@ bool output_vtt(struct whisper_context * ctx, const char * fname, const whisper_
 
         if (params.diarize && pcmf32s.size() == 2)
         {
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1, true);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1, true);
             speaker.insert(0, "<v Speaker");
             speaker.append(">");
         }
@@ -435,7 +404,7 @@ bool output_srt(struct whisper_context * ctx, const char * fname, const whisper_
 
         if (params.diarize && pcmf32s.size() == 2)
         {
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1);
         }
 
         fout << i + 1 + params.offset_n << "\n";
@@ -536,7 +505,7 @@ bool output_csv(struct whisper_context * ctx, const char * fname, const whisper_
         fout << 10 * t0 << "," << 10 * t1 << ",";
         if (params.diarize && pcmf32s.size() == 2)
         {
-            fout << estimate_diarization_speaker(pcmf32s, t0, t1, true) << ",";
+            fout << estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1, true) << ",";
         }
         fout << "\"" << text_escaped << "\"\n";
     }
@@ -717,7 +686,7 @@ bool output_json(
                     }
 
                     if (params.diarize && pcmf32s.size() == 2) {
-                        value_s("speaker", estimate_diarization_speaker(pcmf32s, t0, t1, true).c_str(), true);
+                        value_s("speaker", estimate_diarization_speaker(WHISPER_SAMPLE_RATE,pcmf32s, t0, t1, true).c_str(), true);
                     }
 
                     if (params.tinydiarize) {
@@ -774,7 +743,7 @@ bool output_wts(struct whisper_context * ctx, const char * fname, const char * f
         std::string speaker = "";
 
         if (params.diarize && pcmf32s.size() == 2) {
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1);
         }
 
         for (int j = 0; j < n; ++j) {
@@ -890,7 +859,7 @@ bool output_lrc(struct whisper_context * ctx, const char * fname, const whisper_
         {
             const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
             const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
-            speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+            speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1);
         }
 
         fout <<  '[' << timestamp_lrc << ']' << speaker << text << "\n";

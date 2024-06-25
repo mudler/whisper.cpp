@@ -47,6 +47,18 @@ func Process(model whisper.Model, path string, flags *Flags) error {
 		data = buf.AsFloat32Buffer().Data
 	}
 
+	if (stereo) {
+		       // convert to stereo, float
+			   pcmf32s.resize(2);
+
+			   pcmf32s[0].resize(n);
+			   pcmf32s[1].resize(n);
+			   for (uint64_t i = 0; i < n; i++) {
+				   pcmf32s[0][i] = float(pcm16[2*i])/32768.0f;
+				   pcmf32s[1][i] = float(pcm16[2*i + 1])/32768.0f;
+			   }
+	}
+
 	// Segment callback when -tokens is specified
 	var cb whisper.SegmentCallback
 	if flags.IsTokens() {

@@ -309,3 +309,5 @@ bool is_file_exist(const char *fileName);
 
 // write text to file, and call system("command voice_id file")
 bool speak_with_file(const std::string & command, const std::string & text, const std::string & path, int voice_id);
+
+std::string estimate_diarization_speaker(int whisper_sample_rate,std::vector<std::vector<float>> pcmf32s, int64_t t0, int64_t t1, bool id_only = false);

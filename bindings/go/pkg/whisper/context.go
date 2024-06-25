@@ -290,11 +290,18 @@ func (context *context) IsLANG(t Token, lang string) bool {
 // PRIVATE METHODS
 
 func toSegment(ctx *whisper.Context, n int) Segment {
+
+	//if (params.diarize && pcmf32s.size() == 2)
+	//{
+	//	speaker = estimate_diarization_speaker(WHISPER_SAMPLE_RATE, pcmf32s, t0, t1, true);
+	t0 := ctx.Whisper_full_get_segment_t0(n)
+	t1 := ctx.Whisper_full_get_segment_t1(n)
+	string(C.estimate_diarization_speaker(C.WHISPER_SAMPLE_RATE, pcmf32s, t0, t1, true))
 	return Segment{
 		Num:    n,
 		Text:   strings.TrimSpace(ctx.Whisper_full_get_segment_text(n)),
-		Start:  time.Duration(ctx.Whisper_full_get_segment_t0(n)) * time.Millisecond * 10,
-		End:    time.Duration(ctx.Whisper_full_get_segment_t1(n)) * time.Millisecond * 10,
+		Start:  time.Duration(t0) * time.Millisecond * 10,
+		End:    time.Duration(t1) * time.Millisecond * 10,
 		Tokens: toTokens(ctx, n),
 	}
 }

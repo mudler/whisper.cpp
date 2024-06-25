@@ -370,6 +370,13 @@ func (ctx *Context) Whisper_full_get_segment_text(segment int) string {
 	return C.GoString(C.whisper_full_get_segment_text((*C.struct_whisper_context)(ctx), C.int(segment)))
 }
 
+func (ctx *Context) Whisper_estimate_diarization_speaker(t0, t1 int) string {
+	const auto & pcmf32s = *((whisper_print_user_data *) user_data)->pcmf32s;
+
+	
+	return C.GoString(C.estimate_diarization_speaker(C.int(C.WHISPER_SAMPLE_RATE), pcmf32s, C.int(t0), C.int(t1), C.bool(true)))
+}
+
 // Get number of tokens in the specified segment.
 func (ctx *Context) Whisper_full_n_tokens(segment int) int {
 	return int(C.whisper_full_n_tokens((*C.struct_whisper_context)(ctx), C.int(segment)))
